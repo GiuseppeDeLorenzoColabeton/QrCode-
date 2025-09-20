@@ -35,6 +35,18 @@
         header {
             text-align: center;
             margin-bottom: 25px;
+            position: relative;
+        }
+
+        .logo-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .logo {
+            max-height: 80px;
+            max-width: 100%;
         }
 
         h1 {
@@ -216,6 +228,9 @@
 <body>
     <div class="container">
         <header>
+            <div class="logo-container">
+                <img src="https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg" alt="Logo Colabeton" class="logo" id="logo">
+            </div>
             <h1>QR Code Colabeton</h1>
             <p>Scansiona il QR code per visualizzare i dettagli del documento</p>
         </header>
@@ -322,6 +337,7 @@
             const resultSection = document.getElementById('result-section');
             const resetButton = document.getElementById('reset-button');
             const exportPdfButton = document.getElementById('export-pdf-button');
+            const logo = document.getElementById('logo');
             
             let stream = null;
             let scanning = false;
@@ -494,27 +510,44 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                doc.setFontSize(22);
-                doc.text("Riepilogo Scansione QR Code", 10, 20);
+                // Aggiungi il logo al PDF
+                const logoUrl = 'https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg';
                 
-                const tableData = [
-                    ['Numero Commissione:', document.getElementById('field-commissione').textContent],
-                    ['Documento di trasporto:', document.getElementById('field-documento').textContent],
-                    ['Data emissione:', document.getElementById('field-data').textContent],
-                    ['Impianto:', document.getElementById('field-impianto').textContent],
-                    ['Targa:', document.getElementById('field-targa').textContent],
-                    ['Codice Calcestruzzo:', document.getElementById('field-calcestruzzo').textContent],
-                    ['Quantità (metri cubi):', document.getElementById('field-quantita').textContent],
-                    ['Note:', document.getElementById('field-notes').textContent]
-                ];
+                // Creiamo un'immagine per ottenere le dimensioni del logo
+                const img = new Image();
+                img.src = logoUrl;
                 
-                doc.autoTable({
-                    startY: 30,
-                    head: [['Campo', 'Valore']],
-                    body: tableData,
-                });
-                
-                doc.save('Riepilogo_Scansione_QR.pdf');
+                img.onload = function() {
+                    // Calcoliamo le dimensioni mantenendo le proporzioni
+                    const logoWidth = 40;
+                    const logoHeight = (img.height * logoWidth) / img.width;
+                    
+                    // Aggiungiamo il logo al PDF
+                    doc.addImage(logoUrl, 'JPEG', 10, 10, logoWidth, logoHeight);
+                    
+                    // Titolo
+                    doc.setFontSize(22);
+                    doc.text("Riepilogo Scansione QR Code", 60, 25);
+                    
+                    const tableData = [
+                        ['Numero Commissione:', document.getElementById('field-commissione').textContent],
+                        ['Documento di trasporto:', document.getElementById('field-documento').textContent],
+                        ['Data emissione:', document.getElementById('field-data').textContent],
+                        ['Impianto:', document.getElementById('field-impianto').textContent],
+                        ['Targa:', document.getElementById('field-targa').textContent],
+                        ['Codice Calcestruzzo:', document.getElementById('field-calcestruzzo').textContent],
+                        ['Quantità (metri cubi):', document.getElementById('field-quantita').textContent],
+                        ['Note:', document.getElementById('field-notes').textContent]
+                    ];
+                    
+                    doc.autoTable({
+                        startY: 40,
+                        head: [['Campo', 'Valore']],
+                        body: tableData,
+                    });
+                    
+                    doc.save('Riepilogo_Scansione_QR.pdf');
+                };
             });
 
             scanButton.addEventListener('click', () => {
