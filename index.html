@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scanner QR Code</title>
+    <title>QR Code Colabeton</title>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
@@ -38,7 +38,7 @@
         }
 
         h1 {
-            color: #2b6cb0; /* Blu scuro */
+            color: #A10030; /* Bordeaux */
             margin-bottom: 10px;
             font-size: 28px;
         }
@@ -108,7 +108,7 @@
         .btn {
             padding: 14px 28px;
             background: #4299e1;
-            color: white;
+            color: #2B2B2B; /* Colore testo bottone */
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -216,7 +216,7 @@
 <body>
     <div class="container">
         <header>
-            <h1>Scanner QR Code</h1>
+            <h1>QR Code Colabeton</h1>
             <p>Scansiona il QR code per visualizzare i dettagli del documento</p>
         </header>
         
@@ -239,19 +239,10 @@
             <button id="scan-button" class="btn">
                 <span class="icon">📷</span> Avvia Scansione
             </button>
-            
-            <button id="flip-camera" class="btn btn-secondary">
-                <span class="icon">🔄</span> Cambia Fotocamera
-            </button>
         </div>
         
         <div class="result-section" id="result-section">
             <h2>Risultato Scansione</h2>
-            
-            <div class="result-content">
-                <strong>Testo originale:</strong>
-                <div id="original-text" style="word-break: break-all; margin-top: 8px; padding: 10px; background: #e2e8f0; border-radius: 6px;"></div>
-            </div>
             
             <h3>Testo formattato:</h3>
             <table class="formatted-table" id="formatted-table">
@@ -326,17 +317,14 @@
         document.addEventListener('DOMContentLoaded', function() {
             const video = document.getElementById('video');
             const scanButton = document.getElementById('scan-button');
-            const flipCameraButton = document.getElementById('flip-camera');
             const statusElement = document.getElementById('status');
             const errorMessage = document.getElementById('error-message');
-            const originalTextElement = document.getElementById('original-text');
             const resultSection = document.getElementById('result-section');
             const resetButton = document.getElementById('reset-button');
             const exportPdfButton = document.getElementById('export-pdf-button');
             
             let stream = null;
             let scanning = false;
-            let currentFacingMode = 'environment';
             
             function checkCameraSupport() {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -357,7 +345,7 @@
                     
                     const constraints = {
                         video: {
-                            facingMode: currentFacingMode,
+                            facingMode: 'environment',
                             width: { ideal: 1280 },
                             height: { ideal: 720 }
                         },
@@ -399,14 +387,6 @@
                 statusElement.textContent = 'Scansione fermata. Clicca "Avvia Scansione" per riprendere.';
             }
             
-            async function flipCamera() {
-                if (stream) {
-                    stopCamera();
-                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
-                    setTimeout(initCamera, 300);
-                }
-            }
-            
             function tick() {
                 if (!scanning) return;
                 
@@ -433,7 +413,6 @@
             }
             
             function processQRCode(text) {
-                originalTextElement.textContent = text;
                 resultSection.style.display = 'block';
                 stopCamera();
                 
@@ -514,8 +493,6 @@
                     initCamera();
                 }
             });
-            
-            flipCameraButton.addEventListener('click', flipCamera);
             
             // Avvia la fotocamera all'inizio
             initCamera();
