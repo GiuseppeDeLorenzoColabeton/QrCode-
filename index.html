@@ -16,8 +16,8 @@
         }
 
         body {
-            background: #f0f4f8; /* Sfondo chiaro */
-            color: #2B2B2B; /* Testo scuro */
+            background: #f0f4f8;
+            color: #2B2B2B;
             line-height: 1.6;
             padding: 20px;
             min-height: 100vh;
@@ -26,7 +26,7 @@
         .container {
             max-width: 100%;
             margin: 0 auto;
-            background: #ffffff; /* Sfondo bianco */
+            background: #ffffff;
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
@@ -50,13 +50,13 @@
         }
 
         h1 {
-            color: #A10030; /* Bordeaux */
+            color: #A10030;
             margin-bottom: 10px;
             font-size: 28px;
         }
 
         .camera-section {
-            background: rgba(237, 242, 247, 0.5); /* Sfondo chiaro */
+            background: rgba(237, 242, 247, 0.5);
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 20px;
@@ -119,8 +119,8 @@
 
         .btn {
             padding: 14px 28px;
-            background: #A10030; /* Bordeaux */
-            color: white; /* Colore testo bianco */
+            background: #A10030;
+            color: white;
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -145,7 +145,7 @@
         }
 
         .btn-secondary {
-            background: #48bb78; /* Verde */
+            background: #48bb78;
         }
 
         .btn-secondary:hover {
@@ -155,7 +155,7 @@
         .status {
             text-align: center;
             margin: 15px 0;
-            color: #4a5568; /* Testo scuro */
+            color: #4a5568;
             min-height: 20px;
         }
 
@@ -179,7 +179,7 @@
         }
 
         .result-content {
-            background: #f7fafc; /* Sfondo chiaro */
+            background: #f7fafc;
             border-radius: 8px;
             padding: 15px;
             margin-bottom: 15px;
@@ -193,13 +193,13 @@
 
         .formatted-table td {
             padding: 12px;
-            border: 1px solid #e2e8f0; /* Bordo chiaro */
+            border: 1px solid #e2e8f0;
             vertical-align: top;
         }
         
         .field-name {
             font-weight: 600;
-            color: #2B2B2B; /* Colore testo campo */
+            color: #2B2B2B;
             display: block;
             margin-bottom: 4px;
         }
@@ -229,7 +229,7 @@
     <div class="container">
         <header>
             <div class="logo-container">
-                <img src="https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg" alt="Logo Colabeton" class="logo" id="logo">
+                <img src="https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg" alt="Logo Colabeton" class="logo" id="logo" onerror="handleImageError()">
             </div>
             <h1>QR Code Colabeton</h1>
             <p>Scansiona il QR code per visualizzare i dettagli del documento</p>
@@ -341,6 +341,40 @@
             
             let stream = null;
             let scanning = false;
+            let logoDataUrl = null;
+            
+            // Pre-carica il logo per il PDF
+            function preloadLogoForPdf() {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.crossOrigin = "Anonymous";
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        try {
+                            logoDataUrl = canvas.toDataURL('image/jpeg');
+                            resolve();
+                        } catch (e) {
+                            console.warn("Impossibile convertire il logo in Data URL:", e);
+                            resolve(); // Risolviamo comunque per non bloccare l'app
+                        }
+                    };
+                    img.onerror = function() {
+                        console.warn("Impossibile caricare il logo per il PDF");
+                        resolve(); // Risolviamo comunque per non bloccare l'app
+                    };
+                    img.src = 'https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg';
+                });
+            }
+            
+            // Gestione errore caricamento immagine
+            window.handleImageError = function() {
+                const logoContainer = document.querySelector('.logo-container');
+                logoContainer.innerHTML = '<div style="font-size: 20px; font-weight: bold; color: #A10030;">COLABETON</div>';
+            };
             
             function checkCameraSupport() {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -510,44 +544,55 @@
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 
-                // Aggiungi il logo al PDF
-                const logoUrl = 'https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg';
-                
-                // Creiamo un'immagine per ottenere le dimensioni del logo
-                const img = new Image();
-                img.src = logoUrl;
-                
-                img.onload = function() {
-                    // Calcoliamo le dimensioni mantenendo le proporzioni
-                    const logoWidth = 40;
-                    const logoHeight = (img.height * logoWidth) / img.width;
-                    
-                    // Aggiungiamo il logo al PDF
-                    doc.addImage(logoUrl, 'JPEG', 10, 10, logoWidth, logoHeight);
-                    
-                    // Titolo
+                // Aggiungi il logo al PDF se disponibile
+                if (logoDataUrl) {
+                    doc.addImage(logoDataUrl, 'JPEG', 14, 10, 30, 30);
                     doc.setFontSize(22);
-                    doc.text("Riepilogo Scansione QR Code", 60, 25);
-                    
-                    const tableData = [
-                        ['Numero Commissione:', document.getElementById('field-commissione').textContent],
-                        ['Documento di trasporto:', document.getElementById('field-documento').textContent],
-                        ['Data emissione:', document.getElementById('field-data').textContent],
-                        ['Impianto:', document.getElementById('field-impianto').textContent],
-                        ['Targa:', document.getElementById('field-targa').textContent],
-                        ['Codice Calcestruzzo:', document.getElementById('field-calcestruzzo').textContent],
-                        ['Quantità (metri cubi):', document.getElementById('field-quantita').textContent],
-                        ['Note:', document.getElementById('field-notes').textContent]
-                    ];
-                    
-                    doc.autoTable({
-                        startY: 40,
-                        head: [['Campo', 'Valore']],
-                        body: tableData,
-                    });
-                    
-                    doc.save('Riepilogo_Scansione_QR.pdf');
-                };
+                    doc.text("Riepilogo Scansione QR Code", 50, 25);
+                } else {
+                    doc.setFontSize(22);
+                    doc.text("Riepilogo Scansione QR Code", 14, 20);
+                    doc.setFontSize(12);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text("Colabeton", 14, 27);
+                }
+                
+                const tableData = [
+                    ['Numero Commissione:', document.getElementById('field-commissione').textContent],
+                    ['Documento di trasporto:', document.getElementById('field-documento').textContent],
+                    ['Data emissione:', document.getElementById('field-data').textContent],
+                    ['Impianto:', document.getElementById('field-impianto').textContent],
+                    ['Targa:', document.getElementById('field-targa').textContent],
+                    ['Codice Calcestruzzo:', document.getElementById('field-calcestruzzo').textContent],
+                    ['Quantità (metri cubi):', document.getElementById('field-quantita').textContent],
+                    ['Note:', document.getElementById('field-notes').textContent]
+                ];
+                
+                doc.autoTable({
+                    startY: logoDataUrl ? 40 : 35,
+                    head: [['Campo', 'Valore']],
+                    body: tableData,
+                    theme: 'grid',
+                    headStyles: {
+                        fillColor: [161, 0, 48],
+                        textColor: [255, 255, 255],
+                        fontStyle: 'bold'
+                    },
+                    styles: {
+                        fontSize: 10,
+                        cellPadding: 3,
+                        lineColor: [100, 100, 100]
+                    }
+                });
+                
+                // Aggiungi data e ora di esportazione
+                const now = new Date();
+                const dateTimeString = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT');
+                doc.setFontSize(10);
+                doc.setTextColor(100, 100, 100);
+                doc.text('Esportato il: ' + dateTimeString, 14, doc.internal.pageSize.height - 10);
+                
+                doc.save('Riepilogo_Scansione_QR_Colabeton.pdf');
             });
 
             scanButton.addEventListener('click', () => {
@@ -558,7 +603,10 @@
                 }
             });
             
-            initCamera();
+            // Pre-carica il logo e inizializza la fotocamera
+            preloadLogoForPdf().then(() => {
+                initCamera();
+            });
         });
     </script>
 </body>
