@@ -546,12 +546,12 @@
                 
                 // Aggiungi il logo al PDF se disponibile
                 if (logoDataUrl) {
-                    doc.addImage(logoDataUrl, 'JPEG', 14, 10, 30, 30);
+                    doc.addImage(logoDataUrl, 'JPEG', 14, 10, 50, 50);
                     doc.setFontSize(22);
-                    doc.text("Riepilogo Scansione QR Code", 50, 25);
+                    doc.text("Dati Qr Code Colabeton S.p.A.", 50, 25);
                 } else {
                     doc.setFontSize(22);
-                    doc.text("Riepilogo Scansione QR Code", 14, 20);
+                    doc.text("Dati Qr Code Colabeton S.p.A.", 14, 20);
                     doc.setFontSize(12);
                     doc.setTextColor(100, 100, 100);
                     doc.text("Colabeton", 14, 27);
@@ -592,7 +592,7 @@
                 doc.setTextColor(100, 100, 100);
                 doc.text('Esportato il: ' + dateTimeString, 14, doc.internal.pageSize.height - 10);
                 
-                doc.save('Riepilogo_Scansione_QR_Colabeton.pdf');
+                doc.save('Dati_Qr_Code_Colabeton_S.p.A..pdf');
             });
 
             scanButton.addEventListener('click', () => {
