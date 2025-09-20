@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner QR Code - Campi Personalizzati</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a365d 0%, #2a4365 100%);
+            color: #fff;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: rgba(26, 32, 44, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+        
+        h1 {
+            color: #63b3ed;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2d3748;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: #2d3748;
+            cursor: pointer;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: #4299e1;
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .camera-section, .upload-section {
+            background: rgba(45, 55, 72, 0.5);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        #video-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+        }
+        
+        #video {
+            width: 100%;
+            border-radius: 12px;
+            transform: scaleX(-1);
+        }
+        
+        .scan-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+        }
+        
+        .scan-frame {
+            width: 70%;
+            height: 200px;
+            border: 3px solid #4299e1;
+            border-radius: 12px;
+            box-shadow: 0 0 0 2000px rgba(0, 0, 0, 0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .scan-line {
+            position: absolute;
+            height: 4px;
+            width: 100%;
+            background: linear-gradient(to right, transparent 0%, #4299e1 50%, transparent 100%);
+            top: 20%;
+            animation: scan 2s infinite ease-in-out;
+            border-radius: 10px;
+        }
+        
+        @keyframes scan {
+            0% { top: 20%; }
+            50% { top: 80%; }
+            100% { top: 20%; }
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            background: #4299e1;
+            color: white;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 15px 5px;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn:hover {
+            background: #3182ce;
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            background: #4a5568;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-secondary {
+            background: #38a169;
+        }
+        
+        .btn-secondary:hover {
+            background: #2f855a;
+        }
+        
+        .status {
+            text-align: center;
+            margin: 15px 0;
+            color: #a0aec0;
+            min-height: 20px;
+        }
+        
+        .error-message {
+            background: rgba(245, 101, 101, 0.2);
+            color: #fc8181;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            border-left: 4px solid #e53e3e;
+        }
+        
+        .solution-box {
+            background: rgba(45, 55, 72, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .solution-title {
+            color: #68d391;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        
+        .steps {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+        
+        .steps li {
+            margin-bottom: 10px;
+        }
+        
+        .permission-help {
+            background: rgba(246, 173, 85, 0.1);
+            color: #f6ad55;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #f6ad55;
+        }
+        
+        .result-section {
+            display: none;
+            background: rgba(45, 55, 72, 0.7);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .result-content {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .formatted-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        
+        .formatted-table td {
+            padding: 12px;
+            border: 1px solid #2d3748;
+            vertical-align: top;
+        }
+        
+        .field-name {
+            font-weight: 600;
+            color: #63b3ed;
+            display: block;
+            margin-bottom: 4px;
+        }
+        
+        .icon {
+            margin-right: 8px;
+            font-size: 18px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #4299e1;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .upload-area:hover {
+            background: rgba(66, 153, 225, 0.1);
+        }
+        
+        .upload-icon {
+            font-size: 50px;
+            color: #4299e1;
+            margin-bottom: 15px;
+        }
+        
+        #image-preview {
+            max-width: 100%;
+            max-height: 300px;
+            margin: 15px auto;
+            display: block;
+            border-radius: 8px;
+        }
+        
+        @media (max-width: 600px) {
+            .tab {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+            
+            .scan-frame {
+                height: 150px;
+            }
+            
+            .formatted-table {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Scanner QR Code</h1>
+            <p>Soluzione completa per problemi di accesso alla fotocamera</p>
+        </header>
+        
+        <div class="tab-container">
+            <div class="tab active" data-tab="camera">Fotocamera</div>
+            <div class="tab" data-tab="upload">Carica Immagine</div>
+            <div class="tab" data-tab="solutions">Soluzioni</div>
+        </div>
+        
+        <div class="tab-content active" id="camera-tab">
+            <div class="camera-section">
+                <div id="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <div class="scan-overlay">
+                        <div class="scan-frame">
+                            <div class="scan-line"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="status" id="status">Preparazione della fotocamera...</p>
+                
+                <div class="error-message" id="error-message">
+                    Impossibile accedere alla fotocamera. Vedi la scheda "Soluzioni" per risolvere il problema.
+                </div>
+                
+                <button id="scan-button" class="btn">
+                    <span class="icon">📷</span> Avvia Scansione
+                </button>
+                
+                <button id="flip-camera" class="btn btn-secondary">
+                    <span class="icon">🔄</span> Cambia Fotocamera
+                </button>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="upload-tab">
+            <div class="upload-section">
+                <div class="upload-area" id="upload-area">
+                    <div class="upload-icon">📁</div>
+                    <p>Clicca qui o trascina un'immagine del QR code</p>
+                    <p><small>Formati supportati: JPG, PNG, GIF</small></p>
+                </div>
+                
+                <input type="file" id="file-input" accept="image/*" style="display: none;">
+                
+                <img id="image-preview" style="display: none;">
+                
+                <button id="process-btn" class="btn" disabled>
+                    <span class="icon">🔍</span> Elabora Immagine
+                </button>
+                
+                <p class="status" id="upload-status">Nessuna immagine caricata</p>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="solutions-tab">
+            <div class="solution-box">
+                <h2 class="solution-title">Soluzioni per Problemi della Fotocamera</h2>
+                
+                <div class="permission-help">
+                    <strong>Problema principale:</strong> I browser richiedono connessioni sicure (HTTPS) per accedere alla fotocamera.
+                </div>
+                
+                <h3>Soluzione 1: Consenti i permessi della fotocamera</h3>
+                <ol class="steps">
+                    <li>Cerca l'icona della fotocamera o del lucchetto nella barra degli indirizzi</li>
+                    <li>Clicca sull'icona e imposta i permessi su "Consenti"</li>
+                    <li>Ricarica la pagina e riprova</li>
+                </ol>
+                
+                <h3>Soluzione 2: Usa un browser diverso</h3>
+                <p>Prova con Chrome o Firefox invece del browser predefinito.</p>
+                
+                <h3>Soluzione 3: Usa un'app dedicata</h3>
+                <p>Installa un'app per scannerizzare QR code dal tuo app store:</p>
+                <ul class="steps">
+                    <li>QR Scanner</li>
+                    <li>QR Code Reader</li>
+                    <li>Barcode Scanner</li>
+                </ul>
+                
+                <h3>Soluzione 4: Usa la fotocamera integrata</h3>
+                <p>Molti smartphone hanno uno scanner QR integrato nella fotocamera:</p>
+                <ol class="steps">
+                    <li>Apri l'app fotocamera</li>
+                    <li>Inquadra il QR code</li>
+                    <li>Clicca sul link che appare</li>
+                </ol>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn" onclick="switchTab('camera')">
+                        <span class="icon">📷</span> Riprova la Fotocamera
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="result-section" id="result-section">
+            <h2>Risultato Scansione</h2>
+            
+            <div class="result-content">
+                <strong>Testo originale:</strong>
+                <div id="original-text" style="word-break: break-all; margin-top: 8px; padding: 10px; background: rgba(0,0,0,0.2); border-radius: 6px;"></div>
+            </div>
+            
+            <h3>Testo formattato:</h3>
+            <table class="formatted-table" id="formatted-table">
+                <tr>
+                    <td width="50%">
+                        <div class="field">
+                            <span class="field-name">Commissione</span>
+                            <div id="field-commissione" class="field-value">-</div>
+                        </div>
+                    </td>
+                    <td width="50%">
+                        <div class="field">
+                            <span class="field-name">Documento di trasporto</span>
+                            <div id="field-documento" class="field-value">-</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="field">
+                            <span class="field-name">Data emissione</span>
+                            <div id="field-data" class="field-value">-</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="field">
+                            <span class="field-name">Impianto di produzione</span>
+                            <div id="field-impianto" class="field-value">-</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="field">
+                            <span class="field-name">Targa</span>
+                            <div id="field-targa" class="field-value">-</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="field">
+                            <span class="field-name">Codice calcestruzzo</span>
+                            <div id="field-calcestruzzo" class="field-value">-</div>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <div class="field">
+                            <span class="field-name">Quantità (metri cubi)</span>
+                            <div id="field-quantita" class="field-value">-</div>
+                        </div>
+                    </td>
+                    <td>
+                        <!-- Campo vuoto per bilanciare la tabella -->
+                    </td>
+                </tr>
+            </table>
+            
+            <button id="reset-button" class="btn" style="margin-top: 20px;">
+                <span class="icon">🔄</span> Scansiona un altro QR Code
+            </button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('video');
+            const scanButton = document.getElementById('scan-button');
+            const flipCameraButton = document.getElementById('flip-camera');
+            const statusElement = document.getElementById('status');
+            const errorMessage = document.getElementById('error-message');
+            const originalTextElement = document.getElementById('original-text');
+            const resultSection = document.getElementById('result-section');
+            const resetButton = document.getElementById('reset-button');
+            const fileInput = document.getElementById('file-input');
+            const uploadArea = document.getElementById('upload-area');
+            const processBtn = document.getElementById('process-btn');
+            const uploadStatus = document.getElementById('upload-status');
+            const imagePreview = document.getElementById('image-preview');
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            let stream = null;
+            let scanning = false;
+            let currentFacingMode = 'environment';
+            let imageFile = null;
+            
+            // Tab switching
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabId = tab.getAttribute('data-tab');
+                    switchTab(tabId);
+                });
+            });
+            
+            function switchTab(tabId) {
+                // Update tabs
+                tabs.forEach(tab => {
+                    if (tab.getAttribute('data-tab') === tabId) {
+                        tab.classList.add('active');
+                    } else {
+                        tab.classList.remove('active');
+                    }
+                });
+                
+                // Update content
+                tabContents.forEach(content => {
+                    if (content.id === `${tabId}-tab`) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+                
+                // If switching to camera tab, try to initialize
+                if (tabId === 'camera') {
+                    setTimeout(checkCameraSupport, 300);
+                }
+            }
+            
+            // Check camera support
+            function checkCameraSupport() {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    statusElement.textContent = 'Browser non supportato. Usa Chrome o Firefox.';
+                    errorMessage.style.display = 'block';
+                    scanButton.disabled = true;
+                    return false;
+                }
+                return true;
+            }
+            
+            // Initialize camera
+            async function initCamera() {
+                if (!checkCameraSupport()) return;
+                
+                try {
+                    statusElement.textContent = 'Accesso alla fotocamera...';
+                    errorMessage.style.display = 'none';
+                    
+                    const constraints = {
+                        video: {
+                            facingMode: currentFacingMode,
+                            width: { ideal: 1280 },
+                            height: { ideal: 720 }
+                        },
+                        audio: false
+                    };
+                    
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                    video.srcObject = stream;
+                    
+                    statusElement.textContent = 'Fotocamera attiva. Inquadra il QR code.';
+                    scanButton.innerHTML = '<span class="icon">⏹️</span> Ferma Scansione';
+                    scanning = true;
+                    
+                    // Start scanning loop
+                    requestAnimationFrame(tick);
+                } catch (error) {
+                    console.error('Error accessing camera:', error);
+                    statusElement.textContent = 'Errore: Impossibile accedere alla fotocamera.';
+                    errorMessage.style.display = 'block';
+                    scanButton.innerHTML = '<span class="icon">📷</span> Avvia Scansione';
+                    scanning = false;
+                    
+                    // Provide specific error message
+                    if (error.name === 'NotAllowedError') {
+                        errorMessage.innerHTML = 'Permesso alla fotocamera negato. Vedi la scheda "Soluzioni" per risolvere.';
+                    } else if (error.name === 'NotFoundError') {
+                        errorMessage.innerHTML = 'Nessuna fotocamera trovata.';
+                    } else if (error.name === 'NotReadableError') {
+                        errorMessage.innerHTML = 'Impossibile accedere alla fotocamera. Potrebbe essere già in uso.';
+                    }
+                }
+            }
+            
+            // Stop camera
+            function stopCamera() {
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                    stream = null;
+                }
+                
+                scanning = false;
+                scanButton.innerHTML = '<span class="icon">📷</span> Avvia Scansione';
+                statusElement.textContent = 'Scansione fermata. Clicca "Avvia Scansione" per riprendere.';
+            }
+            
+            // Flip camera
+            async function flipCamera() {
+                if (stream) {
+                    stopCamera();
+                    currentFacingMode = currentFacingMode === 'environment' ? 'user' : 'environment';
+                    setTimeout(initCamera, 300);
+                }
+            }
+            
+            // Scanning function
+            function tick() {
+                if (!scanning) return;
+                
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    const context = canvas.getContext('2d');
+                    
+                    // Draw video frame to canvas
+                    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    // Get image data
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Try to find QR code
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        // QR code found
+                        processQRCode(code.data);
+                    }
+                }
+                
+                if (scanning) {
+                    requestAnimationFrame(tick);
+                }
+            }
+            
+            // Process QR code text
+            function processQRCode(text) {
+                originalTextElement.textContent = text;
+                
+                // Parse the structured string
+                const fields = text.split('|');
+                
+                // Reset all fields
+                document.getElementById('field-commissione').textContent = '-';
+                document.getElementById('field-documento').textContent = '-';
+                document.getElementById('field-data').textContent = '-';
+                document.getElementById('field-impianto').textContent = '-';
+                document.getElementById('field-targa').textContent = '-';
+                document.getElementById('field-calcestruzzo').textContent = '-';
+                document.getElementById('field-quantita').textContent = '-';
+                
+                // Map fields to the new names
+                fields.forEach(field => {
+                    const fieldType = field.substring(0, 4);
+                    const fieldValue = field.substring(4);
+                    
+                    switch(fieldType) {
+                        case 'E010':
+                            document.getElementById('field-commissione').textContent = fieldValue;
+                            break;
+                        case 'E020':
+                            document.getElementById('field-documento').textContent = fieldValue;
+                            break;
+                        case 'C012':
+                            document.getElementById('field-data').textContent = fieldValue;
+                            break;
+                        case 'B01':
+                            document.getElementById('field-impianto').textContent = fieldValue;
+                            break;
+                        case 'B02':
+                            document.getElementById('field-targa').textContent = fieldValue;
+                            break;
+                        case 'B03':
+                            document.getElementById('field-calcestruzzo').textContent = fieldValue;
+                            break;
+                        case 'F010':
+                            document.getElementById('field-quantita').textContent = fieldValue;
+                            break;
+                    }
+                });
+                
+                resultSection.style.display = 'block';
+                
+                // Stop scanning after finding a code
+                stopCamera();
+            }
+            
+            // Upload area functionality
+            uploadArea.addEventListener('click', () => {
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.background = 'rgba(66, 153, 225, 0.2)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.background = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.background = '';
+                
+                if (e.dataTransfer.files.length) {
+                    handleFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', () => {
+                if (fileInput.files.length) {
+                    handleFile(fileInput.files[0]);
+                }
+            });
+            
+            function handleFile(file) {
+                if (!file.type.match('image.*')) {
+                    uploadStatus.textContent = 'Per favore, seleziona un file immagine.';
+                    uploadStatus.style.color = '#e53e3e';
+                    return;
+                }
+                
+                imageFile = file;
+                uploadStatus.textContent = 'Immagine caricata: ' + file.name;
+                uploadStatus.style.color = '#68d391';
+                
+                // Show preview
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    imagePreview.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    processBtn.disabled = false;
+                };
+                reader.readAsDataURL(file);
+            }
+            
+            processBtn.addEventListener('click', processImage);
+            
+            function processImage() {
+                if (!imageFile) return;
+                
+                uploadStatus.textContent = 'Elaborazione in corso...';
+                
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    
+                    // Set canvas dimensions
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    
+                    // Draw image on canvas
+                    context.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    
+                    // Get image data
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    
+                    // Try to find QR code
+                    const code = jsQR(imageData.data, imageData.width, canvas.height);
+                    
+                    if (code) {
+                        uploadStatus.textContent = 'QR code trovato!';
+                        uploadStatus.style.color = '#68d391';
+                        processQRCode(code.data);
+                    } else {
+                        uploadStatus.textContent = 'Nessun QR code trovato. Prova con un\'immagine più chiara.';
+                        uploadStatus.style.color = '#e53e3e';
+                    }
+                };
+                
+                img.src = URL.createObjectURL(imageFile);
+            }
+            
+            // Reset app
+            resetButton.addEventListener('click', () => {
+                resultSection.style.display = 'none';
+                if (stream) {
+                    stopCamera();
+                }
+                // Switch to camera tab
+                switchTab('camera');
+            });
+            
+            // Event handlers
+            scanButton.addEventListener('click', () => {
+                if (scanning) {
+                    stopCamera();
+                } else {
+                    initCamera();
+                }
+            });
+            
+            flipCameraButton.addEventListener('click', flipCamera);
+            
+            // Initial check
+            checkCameraSupport();
+        });
+        
+        // Make switchTab available globally
+        function switchTab(tabId) {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            // Update tabs
+            tabs.forEach(tab => {
+                if (tab.getAttribute('data-tab') === tabId) {
+                    tab.classList.add('active');
+                } else {
+                    tab.classList.remove('active');
+                }
+            });
+            
+            // Update content
+            tabContents.forEach(content => {
+                if (content.id === `${tabId}-tab`) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
