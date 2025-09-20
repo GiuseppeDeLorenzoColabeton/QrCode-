@@ -108,7 +108,7 @@
         .btn {
             padding: 14px 28px;
             background: #A10030; /* Bordeaux */
-            color: #2B2B2B; /* Colore testo bottone */
+            color: white; /* Colore testo bianco */
             border: none;
             border-radius: 50px;
             cursor: pointer;
@@ -356,7 +356,7 @@
                     video.srcObject = stream;
                     
                     statusElement.textContent = 'Fotocamera attiva. Inquadra il QR code.';
-                    scanButton.innerHTML = '<span class="icon">⏹️</span> Ferma Scansione';
+                    scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                     scanning = true;
                     
                     requestAnimationFrame(tick);
@@ -364,7 +364,7 @@
                     console.error('Error accessing camera:', error);
                     statusElement.textContent = 'Errore: Impossibile accedere alla fotocamera.';
                     errorMessage.style.display = 'block';
-                    scanButton.innerHTML = '<span class="icon">📷</span> Avvia Scansione';
+                    scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                     scanning = false;
                     
                     if (error.name === 'NotAllowedError') {
@@ -383,7 +383,7 @@
                     stream = null;
                 }
                 scanning = false;
-                scanButton.innerHTML = '<span class="icon">📷</span> Avvia Scansione';
+                scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                 statusElement.textContent = 'Scansione fermata. Clicca "Avvia Scansione" per riprendere.';
             }
             
@@ -461,7 +461,6 @@
                 document.getElementById('field-commissione').textContent = data['commissione'] ? data['commissione'].substring(1) : '-';
                 document.getElementById('field-documento').textContent = data['documento'] ? data['documento'].substring(3) : '-';
 
-                // Correzione della logica di estrazione della data
                 if (data['data']) {
                     const dateStr = data['data'];
                     const year = `20${dateStr.substring(0, 2)}`;
