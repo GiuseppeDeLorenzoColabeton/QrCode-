@@ -415,21 +415,54 @@
             function processQRCode(text) {
                 resultSection.style.display = 'block';
                 stopCamera();
-                
-                const fields = text.split('|');
-                const data = {};
 
-                fields.forEach(field => {
-                    const fieldType = field.substring(0, 4);
-                    const fieldValue = field.substring(4);
-                    data[fieldType] = fieldValue;
+                const data = {};
+                const prefixes = {
+                    'E010': 'commissione',
+                    'E020': 'documento',
+                    'C012': 'data',
+                    'B01': 'impianto',
+                    'B02': 'targa',
+                    'B03': 'calcestruzzo',
+                    'F010': 'quantita',
+                    'B04': 'note',
+                    'B05': 'note',
+                    'B06': 'note',
+                    'B07': 'note'
+                };
+
+                const segments = text.split('|');
+
+                segments.forEach(segment => {
+                    let found = false;
+                    for (const prefix in prefixes) {
+                        if (segment.startsWith(prefix)) {
+                            const key = prefixes[prefix];
+                            const value = segment.substring(prefix.length);
+
+                            if (key === 'note') {
+                                if (!data['note']) {
+                                    data['note'] = value;
+                                } else {
+                                    data['note'] += ' ' + value;
+                                }
+                            } else {
+                                data[key] = value;
+                            }
+                            found = true;
+                            break; 
+                        }
+                    }
+                    if (!found) {
+                        console.warn(`Segmento non riconosciuto: ${segment}`);
+                    }
                 });
 
-                document.getElementById('field-commissione').textContent = data['E010'] ? data['E010'].substring(1) : '-';
-                document.getElementById('field-documento').textContent = data['E020'] ? data['E020'].substring(3) : '-';
-                
-                if (data['C012']) {
-                    const dateStr = data['C012'];
+                document.getElementById('field-commissione').textContent = data['commissione'] ? data['commissione'].substring(1) : '-';
+                document.getElementById('field-documento').textContent = data['documento'] ? data['documento'].substring(3) : '-';
+
+                if (data['data']) {
+                    const dateStr = data['data'];
                     const year = dateStr.substring(0, 4);
                     const month = dateStr.substring(4, 6);
                     const day = dateStr.substring(6, 8);
@@ -438,20 +471,18 @@
                     document.getElementById('field-data').textContent = '-';
                 }
 
-                document.getElementById('field-impianto').textContent = data['B01'] ? data['B01'] : '-';
-                document.getElementById('field-targa').textContent = data['B02'] ? data['B02'] : '-';
-                document.getElementById('field-calcestruzzo').textContent = data['B03'] ? data['B03'] : '-';
-                
-                if (data['F010']) {
-                    const quantity = parseFloat(data['F010']);
+                document.getElementById('field-impianto').textContent = data['impianto'] || '-';
+                document.getElementById('field-targa').textContent = data['targa'] || '-';
+                document.getElementById('field-calcestruzzo').textContent = data['calcestruzzo'] || '-';
+
+                if (data['quantita']) {
+                    const quantity = parseFloat(data['quantita']);
                     document.getElementById('field-quantita').textContent = isNaN(quantity) ? '-' : quantity.toFixed(1);
                 } else {
                     document.getElementById('field-quantita').textContent = '-';
                 }
 
-                const notesFields = ['B04', 'B05', 'B06', 'B07'];
-                const notesContent = notesFields.map(key => data[key] || '').filter(Boolean).join(' ');
-                document.getElementById('field-notes').textContent = notesContent || '-';
+                document.getElementById('field-notes').textContent = data['note'] || '-';
             }
             
             resetButton.addEventListener('click', () => {
@@ -494,7 +525,6 @@
                 }
             });
             
-            // Avvia la fotocamera all'inizio
             initCamera();
         });
     </script>
