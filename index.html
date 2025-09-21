@@ -420,7 +420,7 @@
                     if (error.name === 'NotAllowedError') {
                         errorMessage.textContent = 'Permesso alla fotocamera negato. Ricarica la pagina e consenti l\'accesso.';
                     } else if (error.name === 'NotFoundError') {
-                        errorMessage.textContent = 'Nessuna fotocamera trovata.';
+                        errorMessage.textContent = 'Nessuna fotocamera trovada.';
                     } else if (error.name === 'NotReadableError') {
                         errorMessage.textContent = 'Impossibile accedere alla fotocamera. Potrebbe essere già in uso.';
                     }
@@ -511,13 +511,13 @@
                 document.getElementById('field-commissione').textContent = data['commissione'] ? data['commissione'].substring(1) : '-';
                 document.getElementById('field-documento').textContent = data['documento'] ? data['documento'].substring(3) : '-';
 
-                // MODIFICA: Nuova logica per il campo data
+                // CORREZIONE: Interpretazione corretta della data
                 if (data['data']) {
                     const dateStr = data['data'];
-                    // Prendiamo tutto dopo C012 e invertiamo il formato
-                    const year = dateStr.substring(0, 4);
-                    const month = dateStr.substring(4, 6);
-                    const day = dateStr.substring(6, 8);
+                    // Prendiamo tutto dopo C012 e dividiamo correttamente
+                    const year = dateStr.substring(0, 4);  // Primi 4 caratteri: anno (2025)
+                    const month = dateStr.substring(4, 6); // Successivi 2: mese (04)
+                    const day = dateStr.substring(6, 8);   // Ultimi 2: giorno (01)
                     document.getElementById('field-data').textContent = `${day}/${month}/${year}`;
                 } else {
                     document.getElementById('field-data').textContent = '-';
@@ -527,9 +527,8 @@
                 document.getElementById('field-targa').textContent = data['targa'] || '-';
                 document.getElementById('field-calcestruzzo').textContent = data['calcestruzzo'] || '-';
 
-                // MODIFICA: Nuova logica per il campo quantità
+                // CORREZIONE: Quantità - prendiamo tutto dopo F01
                 if (data['quantita']) {
-                    // Prendiamo tutto dopo F01 senza conversioni
                     document.getElementById('field-quantita').textContent = data['quantita'];
                 } else {
                     document.getElementById('field-quantita').textContent = '-';
@@ -553,7 +552,7 @@
                 // Aggiungi il logo al PDF se disponibile
                 if (logoDataUrl) {
                     const logoWidth = 30;
-                    const logoHeight = 8;
+                    const logoHeight = 12;
                     const logoX = (pageWidth - logoWidth) / 2; // Centra orizzontalmente
                     const logoY = 15;
                     
