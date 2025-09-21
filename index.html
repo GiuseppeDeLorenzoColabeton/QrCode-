@@ -420,7 +420,7 @@
                     if (error.name === 'NotAllowedError') {
                         errorMessage.textContent = 'Permesso alla fotocamera negato. Ricarica la pagina e consenti l\'accesso.';
                     } else if (error.name === 'NotFoundError') {
-                        errorMessage.textContent = 'Nessuna fotocamera trovada.';
+                        errorMessage.textContent = 'Nessuna fotocamera trovata.';
                     } else if (error.name === 'NotReadableError') {
                         errorMessage.textContent = 'Impossibile accedere alla fotocamera. Potrebbe essere già in uso.';
                     }
@@ -470,7 +470,7 @@
                 const prefixes = {
                     'E010': 'commissione',
                     'E020': 'documento',
-                    'C012': 'data',
+                    'C01': 'data',  // MODIFICATO: da C012 a C01
                     'B01': 'impianto',
                     'B02': 'targa',
                     'B03': 'calcestruzzo',
@@ -514,10 +514,11 @@
                 // CORREZIONE: Interpretazione corretta della data
                 if (data['data']) {
                     const dateStr = data['data'];
-                    // Prendiamo tutto dopo C012 e dividiamo correttamente
+                    // Prendiamo tutto dopo C01 e dividiamo correttamente
+                    // Esempio: "20250325" -> "2025" (anno), "03" (mese), "25" (giorno)
                     const year = dateStr.substring(0, 4);  // Primi 4 caratteri: anno (2025)
-                    const month = dateStr.substring(4, 6); // Successivi 2: mese (04)
-                    const day = dateStr.substring(6, 8);   // Ultimi 2: giorno (01)
+                    const month = dateStr.substring(4, 6); // Successivi 2: mese (03)
+                    const day = dateStr.substring(6, 8);   // Ultimi 2: giorno (25)
                     document.getElementById('field-data').textContent = `${day}/${month}/${year}`;
                 } else {
                     document.getElementById('field-data').textContent = '-';
