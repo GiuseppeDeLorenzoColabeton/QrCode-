@@ -474,7 +474,7 @@
                     'B01': 'impianto',
                     'B02': 'targa',
                     'B03': 'calcestruzzo',
-                    'F010': 'quantita',
+                    'F01': 'quantita',
                     'B04': 'note',
                     'B05': 'note',
                     'B06': 'note',
@@ -511,11 +511,13 @@
                 document.getElementById('field-commissione').textContent = data['commissione'] ? data['commissione'].substring(1) : '-';
                 document.getElementById('field-documento').textContent = data['documento'] ? data['documento'].substring(3) : '-';
 
+                // MODIFICA: Nuova logica per il campo data
                 if (data['data']) {
                     const dateStr = data['data'];
-                    const year = `20${dateStr.substring(0, 2)}`;
-                    const month = dateStr.substring(2, 4);
-                    const day = dateStr.substring(4, 6);
+                    // Prendiamo tutto dopo C012 e invertiamo il formato
+                    const year = dateStr.substring(0, 4);
+                    const month = dateStr.substring(4, 6);
+                    const day = dateStr.substring(6, 8);
                     document.getElementById('field-data').textContent = `${day}/${month}/${year}`;
                 } else {
                     document.getElementById('field-data').textContent = '-';
@@ -525,9 +527,10 @@
                 document.getElementById('field-targa').textContent = data['targa'] || '-';
                 document.getElementById('field-calcestruzzo').textContent = data['calcestruzzo'] || '-';
 
+                // MODIFICA: Nuova logica per il campo quantità
                 if (data['quantita']) {
-                    const quantity = parseFloat(data['quantita']);
-                    document.getElementById('field-quantita').textContent = isNaN(quantity) ? '-' : quantity.toFixed(1);
+                    // Prendiamo tutto dopo F01 senza conversioni
+                    document.getElementById('field-quantita').textContent = data['quantita'];
                 } else {
                     document.getElementById('field-quantita').textContent = '-';
                 }
