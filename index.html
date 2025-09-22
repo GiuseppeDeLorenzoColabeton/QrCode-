@@ -7,6 +7,8 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -196,7 +198,7 @@
             border: 1px solid #e2e8f0;
             vertical-align: top;
         }
-        
+
         .field-name {
             font-weight: 600;
             color: #2B2B2B;
@@ -214,11 +216,11 @@
                 padding: 12px 20px;
                 font-size: 14px;
             }
-            
+
             .scan-frame {
                 height: 150px;
             }
-            
+
             .formatted-table {
                 font-size: 14px;
             }
@@ -234,7 +236,7 @@
             <h1>QR Code Colabeton - Servizio Tecnologico Centrale -</h1>
             <p>Scansiona il QR code per visualizzare i dettagli del documento</p>
         </header>
-        
+
         <div class="camera-section">
             <div id="video-container">
                 <video id="video" autoplay playsinline></video>
@@ -244,21 +246,21 @@
                     </div>
                 </div>
             </div>
-            
+
             <p class="status" id="status">Preparazione della fotocamera...</p>
-            
+
             <div class="error-message" id="error-message">
                 Impossibile accedere alla fotocamera.
             </div>
-            
+
             <button id="scan-button" class="btn">
                 <span class="icon">📷</span> Avvia Scansione
             </button>
         </div>
-        
+
         <div class="result-section" id="result-section">
             <h2>Risultato Scansione</h2>
-            
+
             <h3>Testo formattato:</h3>
             <table class="formatted-table" id="formatted-table">
                 <tr>
@@ -318,7 +320,7 @@
                 <strong>Note:</strong>
                 <div id="field-notes" class="field-value">-</div>
             </div>
-            
+
             <button id="reset-button" class="btn">
                 <span class="icon">🔄</span> Scansiona un altro QR Code
             </button>
@@ -338,11 +340,15 @@
             const resetButton = document.getElementById('reset-button');
             const exportPdfButton = document.getElementById('export-pdf-button');
             const logo = document.getElementById('logo');
-            
+
             let stream = null;
             let scanning = false;
             let logoDataUrl = null;
+            let currentScanData = null;
             
+            // Storage per i PDF esportati
+            let exportedPdfs = JSON.parse(localStorage.getItem('exportedPdfs')) || {};
+
             // Pre-carica il logo per il PDF
             function preloadLogoForPdf() {
                 return new Promise((resolve, reject) => {
@@ -369,13 +375,13 @@
                     img.src = 'https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg';
                 });
             }
-            
+
             // Gestione errore caricamento immagine
             window.handleImageError = function() {
                 const logoContainer = document.querySelector('.logo-container');
                 logoContainer.innerHTML = '<div style="font-size: 20px; font-weight: bold; color: #A10030;">COLABETON</div>';
             };
-            
+
             function checkCameraSupport() {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     statusElement.textContent = 'Browser non supportato.';
@@ -385,14 +391,14 @@
                 }
                 return true;
             }
-            
+
             async function initCamera() {
                 if (!checkCameraSupport()) return;
-            
+
                 try {
                     statusElement.textContent = 'Accesso alla fotocamera...';
                     errorMessage.style.display = 'none';
-                    
+
                     const constraints = {
                         video: {
                             facingMode: 'environment',
@@ -401,14 +407,14 @@
                         },
                         audio: false
                     };
-                    
+
                     stream = await navigator.mediaDevices.getUserMedia(constraints);
                     video.srcObject = stream;
-                    
+
                     statusElement.textContent = 'Fotocamera attiva. Inquadra il QR code.';
-                    scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
+                    scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Ferma Scansione';
                     scanning = true;
-                    
+
                     requestAnimationFrame(tick);
                 } catch (error) {
                     console.error('Error accessing camera:', error);
@@ -416,7 +422,7 @@
                     errorMessage.style.display = 'block';
                     scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                     scanning = false;
-                    
+
                     if (error.name === 'NotAllowedError') {
                         errorMessage.textContent = 'Permesso alla fotocamera negato. Ricarica la pagina e consenti l\'accesso.';
                     } else if (error.name === 'NotFoundError') {
@@ -426,7 +432,7 @@
                     }
                 }
             }
-            
+
             function stopCamera() {
                 if (stream) {
                     stream.getTracks().forEach(track => track.stop());
@@ -436,32 +442,32 @@
                 scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                 statusElement.textContent = 'Scansione fermata. Clicca "Avvia Scansione" per riprendere.';
             }
-            
+
             function tick() {
                 if (!scanning) return;
-                
+
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
                     const canvas = document.createElement('canvas');
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     const context = canvas.getContext('2d');
-                    
+
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-                    
+
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    
+
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
+
                     if (code) {
                         processQRCode(code.data);
                     }
                 }
-                
+
                 if (scanning) {
                     requestAnimationFrame(tick);
                 }
             }
-            
+
             function processQRCode(text) {
                 resultSection.style.display = 'block';
                 stopCamera();
@@ -470,7 +476,7 @@
                 const prefixes = {
                     'E010': 'commissione',
                     'E020': 'documento',
-                    'C01': 'data',  // MODIFICATO: da C012 a C01
+                    'C01': 'data',
                     'B01': 'impianto',
                     'B02': 'targa',
                     'B03': 'calcestruzzo',
@@ -508,17 +514,18 @@
                     }
                 });
 
+                // Salva i dati correnti per l'esportazione
+                currentScanData = data;
+
                 document.getElementById('field-commissione').textContent = data['commissione'] ? data['commissione'].substring(1) : '-';
                 document.getElementById('field-documento').textContent = data['documento'] ? data['documento'].substring(3) : '-';
 
-                // CORREZIONE: Interpretazione corretta della data
+                // Interpretazione corretta della data
                 if (data['data']) {
                     const dateStr = data['data'];
-                    // Prendiamo tutto dopo C01 e dividiamo correttamente
-                    // Esempio: "20250325" -> "2025" (anno), "03" (mese), "25" (giorno)
-                    const year = dateStr.substring(0, 4);  // Primi 4 caratteri: anno (2025)
-                    const month = dateStr.substring(4, 6); // Successivi 2: mese (03)
-                    const day = dateStr.substring(6, 8);   // Ultimi 2: giorno (25)
+                    const year = dateStr.substring(0, 4);
+                    const month = dateStr.substring(4, 6);
+                    const day = dateStr.substring(6, 8);
                     document.getElementById('field-data').textContent = `${day}/${month}/${year}`;
                 } else {
                     document.getElementById('field-data').textContent = '-';
@@ -528,7 +535,7 @@
                 document.getElementById('field-targa').textContent = data['targa'] || '-';
                 document.getElementById('field-calcestruzzo').textContent = data['calcestruzzo'] || '-';
 
-                // CORREZIONE: Quantità - prendiamo tutto dopo F01
+                // Quantità - prendiamo tutto dopo F01
                 if (data['quantita']) {
                     document.getElementById('field-quantita').textContent = data['quantita'];
                 } else {
@@ -537,37 +544,94 @@
 
                 document.getElementById('field-notes').textContent = data['note'] || '-';
             }
-            
+
+            // Funzione per salvare i dati del PDF nello storage
+            function savePdfData(pdfBlob, data) {
+                const emissionDate = data['data'] ? data['data'].substring(0, 8) : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const quantity = parseFloat(data['quantita']) || 0;
+                
+                if (!exportedPdfs[emissionDate]) {
+                    exportedPdfs[emissionDate] = {
+                        totalQuantity: 0,
+                        pdfs: []
+                    };
+                }
+                
+                const timestamp = new Date().getTime();
+                const filename = `Dati_Qr_Code_${timestamp}.pdf`;
+                
+                exportedPdfs[emissionDate].pdfs.push({
+                    filename: filename,
+                    blob: pdfBlob,
+                    quantity: quantity,
+                    timestamp: timestamp
+                });
+                
+                exportedPdfs[emissionDate].totalQuantity += quantity;
+                
+                // Salva nello storage locale
+                localStorage.setItem('exportedPdfs', JSON.stringify(exportedPdfs));
+            }
+
+            // Funzione per esportare tutti i PDF di una data in una cartella ZIP
+            async function exportDateFolder(emissionDate) {
+                const dateData = exportedPdfs[emissionDate];
+                if (!dateData || dateData.pdfs.length === 0) return;
+
+                const zip = new JSZip();
+                const folder = zip.folder(formatFolderName(emissionDate, dateData.totalQuantity));
+
+                dateData.pdfs.forEach(pdf => {
+                    folder.file(pdf.filename, pdf.blob);
+                });
+
+                const zipBlob = await zip.generateAsync({type: 'blob'});
+                saveAs(zipBlob, `${formatFolderName(emissionDate, dateData.totalQuantity)}.zip`);
+            }
+
+            // Funzione per formattare il nome della cartella
+            function formatFolderName(emissionDate, totalQuantity) {
+                const year = emissionDate.substring(0, 4);
+                const month = emissionDate.substring(4, 6);
+                const day = emissionDate.substring(6, 8);
+                return `${day}_${month}_${year}_${Math.round(totalQuantity)}`;
+            }
+
             resetButton.addEventListener('click', () => {
                 resultSection.style.display = 'none';
+                currentScanData = null;
                 initCamera();
             });
 
-            exportPdfButton.addEventListener('click', () => {
+            exportPdfButton.addEventListener('click', async () => {
+                if (!currentScanData) {
+                    alert('Nessun dato da esportare. Scansiona prima un QR code.');
+                    return;
+                }
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-                
+
                 // Ottieni la larghezza della pagina PDF
                 const pageWidth = doc.internal.pageSize.getWidth();
-                
+
                 // Aggiungi il logo al PDF se disponibile
                 if (logoDataUrl) {
                     const logoWidth = 34;
-                    const logoHeight = 30;
-                    const logoX = (pageWidth - logoWidth) / 2; // Centra orizzontalmente
+                    const logoHeight = 12;
+                    const logoX = (pageWidth - logoWidth) / 2;
                     const logoY = 15;
-                    
+
                     doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight);
-                    
+
                     // Aggiungi la scritta centrata sotto il logo
                     doc.setFontSize(16);
                     doc.setTextColor(40, 40, 40);
                     const text = "Dati Qr Code Colabeton S.p.A.";
                     const textWidth = doc.getTextWidth(text);
-                    const textX = (pageWidth - textWidth) / 2; // Centra orizzontalmente
+                    const textX = (pageWidth - textWidth) / 2;
                     doc.text(text, textX, logoY + logoHeight + 10);
                 } else {
-                    // Se non c'è logo, centra solo il testo
                     doc.setFontSize(16);
                     doc.setTextColor(40, 40, 40);
                     const text = "Dati Qr Code Colabeton S.p.A.";
@@ -575,7 +639,7 @@
                     const textX = (pageWidth - textWidth) / 2;
                     doc.text(text, textX, 20);
                 }
-                
+
                 const tableData = [
                     ['Numero Commissione:', document.getElementById('field-commissione').textContent],
                     ['Documento di trasporto:', document.getElementById('field-documento').textContent],
@@ -586,10 +650,9 @@
                     ['Quantità (metri cubi):', document.getElementById('field-quantita').textContent],
                     ['Note:', document.getElementById('field-notes').textContent]
                 ];
-                
-                // Aumenta lo startY per fare spazio al logo e al testo
+
                 const startY = logoDataUrl ? 45 : 35;
-                
+
                 doc.autoTable({
                     startY: startY,
                     head: [['Campo', 'Valore']],
@@ -606,15 +669,25 @@
                         lineColor: [100, 100, 100]
                     }
                 });
-                
+
                 // Aggiungi data e ora di esportazione
                 const now = new Date();
                 const dateTimeString = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT');
                 doc.setFontSize(10);
                 doc.setTextColor(100, 100, 100);
                 doc.text('Esportato il: ' + dateTimeString, 14, doc.internal.pageSize.height - 10);
+
+                // Genera il PDF come blob
+                const pdfBlob = doc.output('blob');
                 
-                doc.save('Dati_Qr_Code_Colabeton_S.p.A..pdf');
+                // Salva il PDF nello storage
+                savePdfData(pdfBlob, currentScanData);
+                
+                // Esporta la cartella della data corrente
+                const emissionDate = currentScanData['data'] ? currentScanData['data'].substring(0, 8) : new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                await exportDateFolder(emissionDate);
+                
+                alert('PDF esportato con successo nella cartella della data corrispondente!');
             });
 
             scanButton.addEventListener('click', () => {
@@ -624,7 +697,7 @@
                     initCamera();
                 }
             });
-            
+
             // Pre-carica il logo e inizializza la fotocamera
             preloadLogoForPdf().then(() => {
                 initCamera();
