@@ -196,7 +196,7 @@
             border: 1px solid #e2e8f0;
             vertical-align: top;
         }
-
+        
         .field-name {
             font-weight: 600;
             color: #2B2B2B;
@@ -214,11 +214,11 @@
                 padding: 12px 20px;
                 font-size: 14px;
             }
-
+            
             .scan-frame {
                 height: 150px;
             }
-
+            
             .formatted-table {
                 font-size: 14px;
             }
@@ -234,7 +234,7 @@
             <h1>QR Code Colabeton - Servizio Tecnologico Centrale -</h1>
             <p>Scansiona il QR code per visualizzare i dettagli del documento</p>
         </header>
-
+        
         <div class="camera-section">
             <div id="video-container">
                 <video id="video" autoplay playsinline></video>
@@ -244,21 +244,21 @@
                     </div>
                 </div>
             </div>
-
+            
             <p class="status" id="status">Preparazione della fotocamera...</p>
-
+            
             <div class="error-message" id="error-message">
                 Impossibile accedere alla fotocamera.
             </div>
-
+            
             <button id="scan-button" class="btn">
                 <span class="icon">📷</span> Avvia Scansione
             </button>
         </div>
-
+        
         <div class="result-section" id="result-section">
             <h2>Risultato Scansione</h2>
-
+            
             <h3>Testo formattato:</h3>
             <table class="formatted-table" id="formatted-table">
                 <tr>
@@ -318,7 +318,7 @@
                 <strong>Note:</strong>
                 <div id="field-notes" class="field-value">-</div>
             </div>
-
+            
             <button id="reset-button" class="btn">
                 <span class="icon">🔄</span> Scansiona un altro QR Code
             </button>
@@ -338,11 +338,11 @@
             const resetButton = document.getElementById('reset-button');
             const exportPdfButton = document.getElementById('export-pdf-button');
             const logo = document.getElementById('logo');
-
+            
             let stream = null;
             let scanning = false;
             let logoDataUrl = null;
-
+            
             // Pre-carica il logo per il PDF
             function preloadLogoForPdf() {
                 return new Promise((resolve, reject) => {
@@ -369,13 +369,13 @@
                     img.src = 'https://i.postimg.cc/Yq4F41hk/IMG-20250914-WA0000.jpg';
                 });
             }
-
+            
             // Gestione errore caricamento immagine
             window.handleImageError = function() {
                 const logoContainer = document.querySelector('.logo-container');
                 logoContainer.innerHTML = '<div style="font-size: 20px; font-weight: bold; color: #A10030;">COLABETON</div>';
             };
-
+            
             function checkCameraSupport() {
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     statusElement.textContent = 'Browser non supportato.';
@@ -385,14 +385,14 @@
                 }
                 return true;
             }
-
+            
             async function initCamera() {
                 if (!checkCameraSupport()) return;
-
+            
                 try {
                     statusElement.textContent = 'Accesso alla fotocamera...';
                     errorMessage.style.display = 'none';
-
+                    
                     const constraints = {
                         video: {
                             facingMode: 'environment',
@@ -401,14 +401,14 @@
                         },
                         audio: false
                     };
-
+                    
                     stream = await navigator.mediaDevices.getUserMedia(constraints);
                     video.srcObject = stream;
-
+                    
                     statusElement.textContent = 'Fotocamera attiva. Inquadra il QR code.';
                     scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                     scanning = true;
-
+                    
                     requestAnimationFrame(tick);
                 } catch (error) {
                     console.error('Error accessing camera:', error);
@@ -416,7 +416,7 @@
                     errorMessage.style.display = 'block';
                     scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                     scanning = false;
-
+                    
                     if (error.name === 'NotAllowedError') {
                         errorMessage.textContent = 'Permesso alla fotocamera negato. Ricarica la pagina e consenti l\'accesso.';
                     } else if (error.name === 'NotFoundError') {
@@ -426,7 +426,7 @@
                     }
                 }
             }
-
+            
             function stopCamera() {
                 if (stream) {
                     stream.getTracks().forEach(track => track.stop());
@@ -436,32 +436,32 @@
                 scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                 statusElement.textContent = 'Scansione fermata. Clicca "Avvia Scansione" per riprendere.';
             }
-
+            
             function tick() {
                 if (!scanning) return;
-
+                
                 if (video.readyState === video.HAVE_ENOUGH_DATA) {
                     const canvas = document.createElement('canvas');
                     canvas.width = video.videoWidth;
                     canvas.height = video.videoHeight;
                     const context = canvas.getContext('2d');
-
+                    
                     context.drawImage(video, 0, 0, canvas.width, canvas.height);
-
+                    
                     const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
+                    
                     const code = jsQR(imageData.data, imageData.width, imageData.height);
-
+                    
                     if (code) {
                         processQRCode(code.data);
                     }
                 }
-
+                
                 if (scanning) {
                     requestAnimationFrame(tick);
                 }
             }
-
+            
             function processQRCode(text) {
                 resultSection.style.display = 'block';
                 stopCamera();
@@ -537,7 +537,7 @@
 
                 document.getElementById('field-notes').textContent = data['note'] || '-';
             }
-
+            
             resetButton.addEventListener('click', () => {
                 resultSection.style.display = 'none';
                 initCamera();
@@ -546,20 +546,19 @@
             exportPdfButton.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
-
+                
                 // Ottieni la larghezza della pagina PDF
                 const pageWidth = doc.internal.pageSize.getWidth();
-
+                
                 // Aggiungi il logo al PDF se disponibile
                 if (logoDataUrl) {
-                    const logoWidth = 30;
                     const logoWidth = 34;
                     const logoHeight = 12;
                     const logoX = (pageWidth - logoWidth) / 2; // Centra orizzontalmente
                     const logoY = 15;
-
+                    
                     doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight);
-
+                    
                     // Aggiungi la scritta centrata sotto il logo
                     doc.setFontSize(16);
                     doc.setTextColor(40, 40, 40);
@@ -576,7 +575,7 @@
                     const textX = (pageWidth - textWidth) / 2;
                     doc.text(text, textX, 20);
                 }
-
+                
                 const tableData = [
                     ['Numero Commissione:', document.getElementById('field-commissione').textContent],
                     ['Documento di trasporto:', document.getElementById('field-documento').textContent],
@@ -587,10 +586,10 @@
                     ['Quantità (metri cubi):', document.getElementById('field-quantita').textContent],
                     ['Note:', document.getElementById('field-notes').textContent]
                 ];
-
+                
                 // Aumenta lo startY per fare spazio al logo e al testo
                 const startY = logoDataUrl ? 45 : 35;
-
+                
                 doc.autoTable({
                     startY: startY,
                     head: [['Campo', 'Valore']],
@@ -607,14 +606,14 @@
                         lineColor: [100, 100, 100]
                     }
                 });
-
+                
                 // Aggiungi data e ora di esportazione
                 const now = new Date();
                 const dateTimeString = now.toLocaleDateString('it-IT') + ' ' + now.toLocaleTimeString('it-IT');
                 doc.setFontSize(10);
                 doc.setTextColor(100, 100, 100);
                 doc.text('Esportato il: ' + dateTimeString, 14, doc.internal.pageSize.height - 10);
-
+                
                 doc.save('Dati_Qr_Code_Colabeton_S.p.A..pdf');
             });
 
@@ -625,7 +624,7 @@
                     initCamera();
                 }
             });
-
+            
             // Pre-carica il logo e inizializza la fotocamera
             preloadLogoForPdf().then(() => {
                 initCamera();
