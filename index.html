@@ -7,8 +7,6 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -344,10 +342,6 @@
             let stream = null;
             let scanning = false;
             let logoDataUrl = null;
-            let currentScanData = null;
-            
-            // Storage per i PDF esportati
-            let exportedPdfs = JSON.parse(localStorage.getItem('exportedPdfs')) || {};
 
             // Pre-carica il logo per il PDF
             function preloadLogoForPdf() {
@@ -412,7 +406,7 @@
                     video.srcObject = stream;
 
                     statusElement.textContent = 'Fotocamera attiva. Inquadra il QR code.';
-                    scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Ferma Scansione';
+                    scanButton.innerHTML = '<span class="icon" style="color: white;">📷</span> Avvia Scansione';
                     scanning = true;
 
                     requestAnimationFrame(tick);
@@ -476,7 +470,7 @@
                 const prefixes = {
                     'E010': 'commissione',
                     'E020': 'documento',
-                    'C01': 'data',
+                    'C01': 'data',  // MODIFICATO: da C012 a C01
                     'B01': 'impianto',
                     'B02': 'targa',
                     'B03': 'calcestruzzo',
@@ -514,18 +508,17 @@
                     }
                 });
 
-                // Salva i dati correnti per l'esportazione
-                currentScanData = data;
-
                 document.getElementById('field-commissione').textContent = data['commissione'] ? data['commissione'].substring(1) : '-';
                 document.getElementById('field-documento').textContent = data['documento'] ? data['documento'].substring(3) : '-';
 
-                // Interpretazione corretta della data
+                // CORREZIONE: Interpretazione corretta della data
                 if (data['data']) {
                     const dateStr = data['data'];
-                    const year = dateStr.substring(0, 4);
-                    const month = dateStr.substring(4, 6);
-                    const day = dateStr.substring(6, 8);
+                    // Prendiamo tutto dopo C01 e dividiamo correttamente
+                    // Esempio: "20250325" -> "2025" (anno), "03" (mese), "25" (giorno)
+                    const year = dateStr.substring(0, 4);  // Primi 4 caratteri: anno (2025)
+                    const month = dateStr.substring(4, 6); // Successivi 2: mese (03)
+                    const day = dateStr.substring(6, 8);   // Ultimi 2: giorno (25)
                     document.getElementById('field-data').textContent = `${day}/${month}/${year}`;
                 } else {
                     document.getElementById('field-data').textContent = '-';
@@ -535,7 +528,7 @@
                 document.getElementById('field-targa').textContent = data['targa'] || '-';
                 document.getElementById('field-calcestruzzo').textContent = data['calcestruzzo'] || '-';
 
-                // Quantità - prendiamo tutto dopo F01
+                // CORREZIONE: Quantità - prendiamo tutto dopo F01
                 if (data['quantita']) {
                     document.getElementById('field-quantita').textContent = data['quantita'];
                 } else {
@@ -545,70 +538,12 @@
                 document.getElementById('field-notes').textContent = data['note'] || '-';
             }
 
-            // Funzione per salvare i dati del PDF nello storage
-            function savePdfData(pdfBlob, data) {
-                const emissionDate = data['data'] ? data['data'].substring(0, 8) : new Date().toISOString().slice(0, 10).replace(/-/g, '');
-                const quantity = parseFloat(data['quantita']) || 0;
-                
-                if (!exportedPdfs[emissionDate]) {
-                    exportedPdfs[emissionDate] = {
-                        totalQuantity: 0,
-                        pdfs: []
-                    };
-                }
-                
-                const timestamp = new Date().getTime();
-                const filename = `Dati_Qr_Code_${timestamp}.pdf`;
-                
-                exportedPdfs[emissionDate].pdfs.push({
-                    filename: filename,
-                    blob: pdfBlob,
-                    quantity: quantity,
-                    timestamp: timestamp
-                });
-                
-                exportedPdfs[emissionDate].totalQuantity += quantity;
-                
-                // Salva nello storage locale
-                localStorage.setItem('exportedPdfs', JSON.stringify(exportedPdfs));
-            }
-
-            // Funzione per esportare tutti i PDF di una data in una cartella ZIP
-            async function exportDateFolder(emissionDate) {
-                const dateData = exportedPdfs[emissionDate];
-                if (!dateData || dateData.pdfs.length === 0) return;
-
-                const zip = new JSZip();
-                const folder = zip.folder(formatFolderName(emissionDate, dateData.totalQuantity));
-
-                dateData.pdfs.forEach(pdf => {
-                    folder.file(pdf.filename, pdf.blob);
-                });
-
-                const zipBlob = await zip.generateAsync({type: 'blob'});
-                saveAs(zipBlob, `${formatFolderName(emissionDate, dateData.totalQuantity)}.zip`);
-            }
-
-            // Funzione per formattare il nome della cartella
-            function formatFolderName(emissionDate, totalQuantity) {
-                const year = emissionDate.substring(0, 4);
-                const month = emissionDate.substring(4, 6);
-                const day = emissionDate.substring(6, 8);
-                return `${day}_${month}_${year}_${Math.round(totalQuantity)}`;
-            }
-
             resetButton.addEventListener('click', () => {
                 resultSection.style.display = 'none';
-                currentScanData = null;
                 initCamera();
             });
 
-            exportPdfButton.addEventListener('click', async () => {
-                if (!currentScanData) {
-                    alert('Nessun dato da esportare. Scansiona prima un QR code.');
-                    return;
-                }
-
+            exportPdfButton.addEventListener('click', () => {
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
 
@@ -617,9 +552,10 @@
 
                 // Aggiungi il logo al PDF se disponibile
                 if (logoDataUrl) {
+                    const logoWidth = 30;
                     const logoWidth = 34;
                     const logoHeight = 12;
-                    const logoX = (pageWidth - logoWidth) / 2;
+                    const logoX = (pageWidth - logoWidth) / 2; // Centra orizzontalmente
                     const logoY = 15;
 
                     doc.addImage(logoDataUrl, 'JPEG', logoX, logoY, logoWidth, logoHeight);
@@ -629,9 +565,10 @@
                     doc.setTextColor(40, 40, 40);
                     const text = "Dati Qr Code Colabeton S.p.A.";
                     const textWidth = doc.getTextWidth(text);
-                    const textX = (pageWidth - textWidth) / 2;
+                    const textX = (pageWidth - textWidth) / 2; // Centra orizzontalmente
                     doc.text(text, textX, logoY + logoHeight + 10);
                 } else {
+                    // Se non c'è logo, centra solo il testo
                     doc.setFontSize(16);
                     doc.setTextColor(40, 40, 40);
                     const text = "Dati Qr Code Colabeton S.p.A.";
@@ -651,6 +588,7 @@
                     ['Note:', document.getElementById('field-notes').textContent]
                 ];
 
+                // Aumenta lo startY per fare spazio al logo e al testo
                 const startY = logoDataUrl ? 45 : 35;
 
                 doc.autoTable({
@@ -677,17 +615,7 @@
                 doc.setTextColor(100, 100, 100);
                 doc.text('Esportato il: ' + dateTimeString, 14, doc.internal.pageSize.height - 10);
 
-                // Genera il PDF come blob
-                const pdfBlob = doc.output('blob');
-                
-                // Salva il PDF nello storage
-                savePdfData(pdfBlob, currentScanData);
-                
-                // Esporta la cartella della data corrente
-                const emissionDate = currentScanData['data'] ? currentScanData['data'].substring(0, 8) : new Date().toISOString().slice(0, 10).replace(/-/g, '');
-                await exportDateFolder(emissionDate);
-                
-                alert('PDF esportato con successo nella cartella della data corrispondente!');
+                doc.save('Dati_Qr_Code_Colabeton_S.p.A..pdf');
             });
 
             scanButton.addEventListener('click', () => {
